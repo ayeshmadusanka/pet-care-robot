@@ -1,0 +1,130 @@
+#include <DHT.h>
+#include <WiFi.h>
+#include <WebServer.h>
+
+// ===== DHT22 Settings =====
+#define DHTPIN 21
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+// ===== Motor Pins (L298) =====
+int IN1 = 12;
+int IN2 = 13;
+int IN3 = 15;
+int IN4 = 2;
+int ENA = 14;   // enable left motor
+int ENB = 4;    // enable right motor
+
+// ===== Relay / Valve Pins =====
+int valve1Pin = 23; // Valve 1
+int valve2Pin = 22; // Valve 2
+
+// ===== Web Server =====
+WebServer server(80);
+
+// ===== Variables for DHT readings =====
+float currentTemp = NAN;
+float currentHum  = NAN;
+unsigned long lastDHTRead = 0;
+
+// ===== Motor Functions =====
+void moveForward()  { digitalWrite(IN1,HIGH); digitalWrite(IN2,LOW);  digitalWrite(IN3,LOW);  digitalWrite(IN4,HIGH);}
+void moveBackward() { digitalWrite(IN1,LOW);  digitalWrite(IN2,HIGH); digitalWrite(IN3,HIGH); digitalWrite(IN4,LOW);}
+void turnLeft()     { digitalWrite(IN1,LOW);  digitalWrite(IN2,HIGH); digitalWrite(IN3,LOW);  digitalWrite(IN4,HIGH);}
+void turnRight()    { digitalWrite(IN1,HIGH); digitalWrite(IN2,LOW);  digitalWrite(IN3,HIGH); digitalWrite(IN4,LOW);}
+void stopCar()      { digitalWrite(IN1,LOW);  digitalWrite(IN2,LOW);  digitalWrite(IN3,LOW);  digitalWrite(IN4,LOW);}
+
+// ===== Dashboard =====
+void handleRoot() {
+  String html = "<!DOCTYPE html><html><head><title>ESP32 Car Control</title>";
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<style>body{font-family:Arial,sans-serif;text-align:center;margin:20px;} button{width:120px;height:40px;margin:5px;font-size:16px;cursor:pointer;} p{font-size:16px;}</style>";
+  html += "<meta http-equiv='refresh' content='2'></head><body>";
+  
+  html += "<h1>ESP32 Car Control</h1>";
+  html += "<p>AP IP: " + WiFi.softAPIP().toString() + "</p>";
+
+  // Motor buttons
+  html += "<button onclick=\"location.href='/forward'\">Forward</button>";
+  html += "<button onclick=\"location.href='/backward'\">Backward</button><br>";
+  html += "<button onclick=\"location.href='/left'\">Left</button>";
+  html += "<button onclick=\"location.href='/right'\">Right</button><br>";
+  html += "<button onclick=\"location.href='/stop'\">Stop</button><br><br>";
+
+  // Valve buttons
+  html += "<button onclick=\"location.href='/valve1_on'\">Valve 1 ON</button>";
+  html += "<button onclick=\"location.href='/valve1_off'\">Valve 1 OFF</button><br>";
+  html += "<button onclick=\"location.href='/valve2_on'\">Valve 2 ON</button>";
+  html += "<button onclick=\"location.href='/valve2_off'\">Valve 2 OFF</button><br><br>";
+
+  // Show DHT22 readings
+  if(!isnan(currentTemp) && !isnan(currentHum)){
+    html += "<p>Temperature: " + String(currentTemp,1) + " °C</p>";
+    html += "<p>Humidity: " + String(currentHum,1) + " %</p>";
+  } else {
+    html += "<p>Reading DHT22...</p>";
+  }
+
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+// ===== Setup =====
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  // Motor pins
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
+  pinMode(ENA, OUTPUT); pinMode(ENB, OUTPUT);
+  digitalWrite(ENA,HIGH);
+  digitalWrite(ENB,HIGH);
+
+  // Valve pins
+  pinMode(valve1Pin, OUTPUT);
+  pinMode(valve2Pin, OUTPUT);
+  digitalWrite(valve1Pin, LOW);
+  digitalWrite(valve2Pin, LOW);
+
+  // Start AP mode
+  WiFi.softAP("ESP32_Car");
+  Serial.println("AP started! Connect to Wi-Fi 'ESP32_Car'");
+  Serial.print("AP IP: "); Serial.println(WiFi.softAPIP());
+
+  // Server Routes
+  server.on("/", handleRoot);
+
+  // Motor controls
+  server.on("/forward",  [](){ moveForward();  server.sendHeader("Location","/"); server.send(303); });
+  server.on("/backward", [](){ moveBackward(); server.sendHeader("Location","/"); server.send(303); });
+  server.on("/left",     [](){ turnLeft();     server.sendHeader("Location","/"); server.send(303); });
+  server.on("/right",    [](){ turnRight();    server.sendHeader("Location","/"); server.send(303); });
+  server.on("/stop",     [](){ stopCar();      server.sendHeader("Location","/"); server.send(303); });
+
+  // Valve control
+  server.on("/valve1_on",  [](){ digitalWrite(valve1Pin,HIGH); server.sendHeader("Location","/"); server.send(303); });
+  server.on("/valve1_off", [](){ digitalWrite(valve1Pin,LOW);  server.sendHeader("Location","/"); server.send(303); });
+  server.on("/valve2_on",  [](){ digitalWrite(valve2Pin,HIGH); server.sendHeader("Location","/"); server.send(303); });
+  server.on("/valve2_off", [](){ digitalWrite(valve2Pin,LOW);  server.sendHeader("Location","/"); server.send(303); });
+
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+// ===== Loop =====
+void loop() {
+  server.handleClient();
+
+  // ===== Read DHT every 2 seconds =====
+  if(millis() - lastDHTRead > 2000){
+    lastDHTRead = millis();
+    float temp = dht.readTemperature();
+    float hum  = dht.readHumidity();
+    if(!isnan(temp) && !isnan(hum)){
+      currentTemp = temp;
+      currentHum  = hum;
+    }
+  }
+}

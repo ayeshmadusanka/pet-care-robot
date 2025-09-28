@@ -1,0 +1,47 @@
+name: lakii
+description: "A Flutter app for robot control using camera feed."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_animate: ^4.2.0
+  camera: ^0.10.5 # Or the latest version
+  permission_handler: ^11.0.1 # Or the latest version
+  cupertino_icons: ^1.0.8
+  http: ^1.1.0 # For network requests
+  provider: ^6.1.1 # For state management
+
+  intl: ^0.18.0 # Added intl for date/time formatting
+  percent_indicator: ^4.2.2 # Added percent_indicator
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+    # Remove assets/logo.png if no longer used.
+  assets:
+    - assets/logo.png
+    - assets/logo.gif
+    - assets/2-Photoroom.png
+    - assets/3-Photoroom.png
+    - assets/4-Photoroom.png
+    - assets/5-Photoroom.png
+    - assets/6-Photoroom.png
+    - assets/7-Photoroom.png
+  # Add other assets here
+
+
+  # Add assets if needed (e.g., images)
+  # assets:
+  #   - assets/images/a_dot_burr.jpeg
+  #   - assets/images/a_dot_ham.jpeg

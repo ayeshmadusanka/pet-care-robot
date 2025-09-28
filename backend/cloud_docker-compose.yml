@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  lakii-cloud-backend:
+    build:
+      context: .
+      dockerfile: CloudDockerfile
+    ports:
+      - "80:5000"
+      - "443:5000"
+    environment:
+      - PORT=5000
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-lakii_secret_key_2024}
+      - DOMAIN=laki.clowntoclown.tk
+    restart: unless-stopped
+    networks:
+      - lakii-cloud-network
+    volumes:
+      - ./logs:/app/logs
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - lakii-cloud-network
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+
+networks:
+  lakii-cloud-network:
+    driver: bridge

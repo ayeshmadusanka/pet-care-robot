@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  lakii-backend:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+    networks:
+      - lakii-network
+
+networks:
+  lakii-network:
+    driver: bridge

@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.esp32.remote.app-mergeDebugResources-33:/layout/activity_main.xml",
+        "source": "com.esp32.remote.app-main-36:/layout/activity_main.xml"
+    }
+]

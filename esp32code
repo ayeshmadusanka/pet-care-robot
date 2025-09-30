@@ -1,0 +1,257 @@
+#include <DHT.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ArduinoJson.h>
+
+// ===== DHT22 Settings =====
+#define DHTPIN 21
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+// ===== Motor Pins (L298) =====
+int IN1 = 12;
+int IN2 = 13;
+int IN3 = 15;
+int IN4 = 2;
+int ENA = 14;   // enable left motor
+int ENB = 4;    // enable right motor
+
+// ===== Relay / Valve Pins =====
+int valve1Pin = 23; // Valve 1
+int valve2Pin = 22; // Valve 2
+
+// ===== Web Server =====
+WebServer server(80);
+
+// ===== Variables for DHT readings =====
+float currentTemp = NAN;
+float currentHum  = NAN;
+unsigned long lastDHTRead = 0;
+
+// ===== Connection Management =====
+unsigned long lastClientRequest = 0;
+int activeConnections = 0;
+const int MAX_CONNECTIONS = 3;
+
+// ===== Motor Functions =====
+void moveForward()  { digitalWrite(IN1,HIGH); digitalWrite(IN2,LOW);  digitalWrite(IN3,LOW);  digitalWrite(IN4,HIGH);}
+void moveBackward() { digitalWrite(IN1,LOW);  digitalWrite(IN2,HIGH); digitalWrite(IN3,HIGH); digitalWrite(IN4,LOW);}
+void turnLeft()     { digitalWrite(IN1,LOW);  digitalWrite(IN2,HIGH); digitalWrite(IN3,LOW);  digitalWrite(IN4,HIGH);}
+void turnRight()    { digitalWrite(IN1,HIGH); digitalWrite(IN2,LOW);  digitalWrite(IN3,HIGH); digitalWrite(IN4,LOW);}
+void stopCar()      { digitalWrite(IN1,LOW);  digitalWrite(IN2,LOW);  digitalWrite(IN3,LOW);  digitalWrite(IN4,LOW);}
+
+// ===== Connection Helper Functions =====
+void addCORSHeaders() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "*");
+  server.sendHeader("Connection", "keep-alive");
+  server.sendHeader("Cache-Control", "no-cache");
+}
+
+void updateConnectionStatus() {
+  lastClientRequest = millis();
+  activeConnections = min(activeConnections + 1, MAX_CONNECTIONS);
+}
+
+// ===== Dashboard =====
+void handleRoot() {
+  updateConnectionStatus();
+  addCORSHeaders();
+
+  String html = "<!DOCTYPE html><html><head><title>ESP32 Car Control</title>";
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<style>body{font-family:Arial,sans-serif;text-align:center;margin:20px;} button{width:120px;height:40px;margin:5px;font-size:16px;cursor:pointer;} p{font-size:16px;}</style>";
+  html += "</head><body>";
+
+  html += "<h1>ESP32 Car Control</h1>";
+  html += "<p>AP IP: " + WiFi.softAPIP().toString() + "</p>";
+  html += "<p>Status: Connected ✓</p>";
+  html += "<p>Active Connections: " + String(activeConnections) + "</p>";
+
+  // Motor buttons
+  html += "<button onclick=\"location.href='/forward'\">Forward</button>";
+  html += "<button onclick=\"location.href='/backward'\">Backward</button><br>";
+  html += "<button onclick=\"location.href='/left'\">Left</button>";
+  html += "<button onclick=\"location.href='/right'\">Right</button><br>";
+  html += "<button onclick=\"location.href='/stop'\">Stop</button><br><br>";
+
+  // Valve buttons
+  html += "<button onclick=\"location.href='/valve1_on'\">Valve 1 ON</button>";
+  html += "<button onclick=\"location.href='/valve1_off'\">Valve 1 OFF</button><br>";
+  html += "<button onclick=\"location.href='/valve2_on'\">Valve 2 ON</button>";
+  html += "<button onclick=\"location.href='/valve2_off'\">Valve 2 OFF</button><br><br>";
+
+  // Show DHT22 readings
+  if(!isnan(currentTemp) && !isnan(currentHum)){
+    html += "<p>Temperature: " + String(currentTemp,1) + " °C</p>";
+    html += "<p>Humidity: " + String(currentHum,1) + " %</p>";
+  } else {
+    html += "<p>Reading DHT22...</p>";
+  }
+
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+// ===== Setup =====
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  // Motor pins
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
+  pinMode(ENA, OUTPUT); pinMode(ENB, OUTPUT);
+  digitalWrite(ENA,HIGH);
+  digitalWrite(ENB,HIGH);
+
+  // Valve pins
+  pinMode(valve1Pin, OUTPUT);
+  pinMode(valve2Pin, OUTPUT);
+  digitalWrite(valve1Pin, LOW);
+  digitalWrite(valve2Pin, LOW);
+
+  // Start AP mode
+  WiFi.softAP("ESP32_Car");
+  Serial.println("AP started! Connect to Wi-Fi 'ESP32_Car'");
+  Serial.print("AP IP: "); Serial.println(WiFi.softAPIP());
+
+  // CORS and common headers function
+  server.onNotFound([](){
+    addCORSHeaders();
+    server.send(404, "text/plain", "Not Found");
+  });
+
+  // Handle preflight OPTIONS requests
+  server.on("/", HTTP_OPTIONS, [](){
+    addCORSHeaders();
+    server.send(200);
+  });
+
+  // Server Routes
+  server.on("/", handleRoot);
+
+  // Sensor data endpoint for Flutter app
+  server.on("/sensor", [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+
+    // Read fresh sensor data
+    float temp = dht.readTemperature();
+    float hum = dht.readHumidity();
+
+    // Update current values if reading is valid
+    if(!isnan(temp)) currentTemp = temp;
+    if(!isnan(hum)) currentHum = hum;
+
+    DynamicJsonDocument doc(256);
+    doc["temperature"] = isnan(currentTemp) ? 0.0 : round(currentTemp * 10) / 10.0;
+    doc["humidity"] = isnan(currentHum) ? 0.0 : round(currentHum * 10) / 10.0;
+    doc["connected"] = true;
+    doc["ip"] = WiFi.softAPIP().toString();
+    doc["ssid"] = "ESP32_Car";
+    doc["uptime"] = millis();
+    doc["connections"] = activeConnections;
+
+    String json;
+    serializeJson(doc, json);
+    server.send(200, "application/json", json);
+  });
+
+  // Motor controls with optimized response
+  server.on("/forward",  [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    moveForward();
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/backward", [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    moveBackward();
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/left",     [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    turnLeft();
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/right",    [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    turnRight();
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/stop",     [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    stopCar();
+    server.send(200, "text/plain", "OK");
+  });
+
+  // Valve control with optimized response
+  server.on("/valve1_on",  [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    digitalWrite(valve1Pin,HIGH);
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/valve1_off", [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    digitalWrite(valve1Pin,LOW);
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/valve2_on",  [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    digitalWrite(valve2Pin,HIGH);
+    server.send(200, "text/plain", "OK");
+  });
+  server.on("/valve2_off", [](){
+    updateConnectionStatus();
+    addCORSHeaders();
+    digitalWrite(valve2Pin,LOW);
+    server.send(200, "text/plain", "OK");
+  });
+
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+// ===== Loop =====
+void loop() {
+  // Handle client requests with higher priority
+  server.handleClient();
+  yield(); // Allow ESP32 to handle WiFi tasks
+
+  // ===== Read DHT every 5 seconds =====
+  if(millis() - lastDHTRead > 5000){
+    lastDHTRead = millis();
+    float temp = dht.readTemperature();
+    float hum  = dht.readHumidity();
+
+    // Only update if readings are valid
+    if(!isnan(temp)) {
+      currentTemp = temp;
+      Serial.print("Temperature: ");
+      Serial.println(currentTemp);
+    }
+    if(!isnan(hum)) {
+      currentHum = hum;
+      Serial.print("Humidity: ");
+      Serial.println(currentHum);
+    }
+  }
+
+  // ===== Connection cleanup every 30 seconds =====
+  if(millis() - lastClientRequest > 30000 && activeConnections > 0){
+    activeConnections = max(0, activeConnections - 1);
+  }
+
+  // Small delay to prevent watchdog timer issues
+  delay(10);
+}

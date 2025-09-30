@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.esp32.remote.app-mergeDebugResources-32:/values-ldltr-v21/values-ldltr-v21.xml",
+            "map": [
+                {
+                    "source": "/Users/mac/.gradle/caches/transforms-3/9f5774448358aa1cf9782d1a4aa9673c/transformed/appcompat-1.6.1/res/values-ldltr-v21/values-ldltr-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "112",
+                        "endOffsets": "163"
+                    }
+                }
+            ]
+        }
+    ]
+}

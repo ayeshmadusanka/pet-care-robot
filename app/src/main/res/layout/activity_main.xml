@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_dark">
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="20dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🚗 ESP32 Car Remote"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🔴 Not Connected"
+        android:textSize="18sp"
+        android:textColor="@color/status_red"
+        android:background="@drawable/status_background"
+        android:padding="12dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintTop_toBottomOf="@id/titleText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/connectButton"
+        android:layout_width="240dp"
+        android:layout_height="56dp"
+        android:text="📡 Connect to ESP32_Car"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="@drawable/connect_button_background"
+        android:textColor="@color/white"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintTop_toBottomOf="@id/statusText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Movement Controls -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/movementCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        app:cardCornerRadius="16dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:cardElevation="8dp"
+        app:layout_constraintTop_toBottomOf="@id/connectButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/movementLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎮 Movement Controls"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:layout_marginBottom="20dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <Button
+                android:id="@+id/forwardButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:text="⬆️"
+                android:textSize="24sp"
+                android:enabled="false"
+                android:background="@drawable/movement_button_background"
+                android:layout_marginBottom="12dp"
+                app:layout_constraintTop_toBottomOf="@id/movementLabel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <Button
+                android:id="@+id/leftButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:text="⬅️"
+                android:textSize="24sp"
+                android:enabled="false"
+                android:background="@drawable/movement_button_background"
+                android:layout_marginEnd="20dp"
+                app:layout_constraintTop_toTopOf="@id/stopButton"
+                app:layout_constraintBottom_toBottomOf="@id/stopButton"
+                app:layout_constraintEnd_toStartOf="@id/stopButton" />
+
+            <Button
+                android:id="@+id/stopButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:text="⏹️"
+                android:textSize="24sp"
+                android:enabled="false"
+                android:background="@drawable/stop_button_background"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp"
+                app:layout_constraintTop_toBottomOf="@id/forwardButton"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <Button
+                android:id="@+id/rightButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:text="➡️"
+                android:textSize="24sp"
+                android:enabled="false"
+                android:background="@drawable/movement_button_background"
+                android:layout_marginStart="20dp"
+                app:layout_constraintTop_toTopOf="@id/stopButton"
+                app:layout_constraintBottom_toBottomOf="@id/stopButton"
+                app:layout_constraintStart_toEndOf="@id/stopButton" />
+
+            <Button
+                android:id="@+id/backwardButton"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:text="⬇️"
+                android:textSize="24sp"
+                android:enabled="false"
+                android:background="@drawable/movement_button_background"
+                android:layout_marginTop="12dp"
+                app:layout_constraintTop_toBottomOf="@id/stopButton"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Valve Controls -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/valveCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:cardElevation="8dp"
+        app:layout_constraintTop_toBottomOf="@id/movementCard"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/valveLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚙️ Valve Controls"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:layout_marginBottom="20dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <LinearLayout
+                android:id="@+id/valve1Layout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                app:layout_constraintTop_toBottomOf="@id/valveLabel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <Button
+                    android:id="@+id/valve1OnButton"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:text="🟢 Valve 1 ON"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:enabled="false"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/valve_on_button_background"
+                    android:textColor="@color/white" />
+
+                <Button
+                    android:id="@+id/valve1OffButton"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:text="🔴 Valve 1 OFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:enabled="false"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/valve_off_button_background"
+                    android:textColor="@color/white" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/valve2Layout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintTop_toBottomOf="@id/valve1Layout"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent">
+
+                <Button
+                    android:id="@+id/valve2OnButton"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:text="🟢 Valve 2 ON"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:enabled="false"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/valve_on_button_background"
+                    android:textColor="@color/white" />
+
+                <Button
+                    android:id="@+id/valve2OffButton"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:text="🔴 Valve 2 OFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:enabled="false"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/valve_off_button_background"
+                    android:textColor="@color/white" />
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
